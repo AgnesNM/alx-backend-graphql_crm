@@ -60,3 +60,70 @@ def check_graphql_endpoint():
     except Exception as e:
         # Return None if GraphQL query fails
         return None
+
+
+def update_low_stock():
+    """
+    Execute GraphQL mutation to update low-stock products (stock < 10)
+    and log the updates to file.
+    """
+    try:
+        # GraphQL endpoint
+        transport = RequestsHTTPTransport(url="http://localhost:8000/graphql")
+        client = Client(transport=transport, fetch_schema_from_transport=True)
+        
+        # GraphQL mutation for updating low-stock products
+        mutation = gql("""
+            mutation {
+                updateLowStockProducts {
+                    updatedProducts {
+                        id
+                        name
+                        stock
+                    }
+                    success
+                    message
+                    updatedCount
+                }
+            }
+        """)
+        
+        # Execute the mutation
+        result = client.execute(mutation)
+        mutation_result = result.get("updateLowStockProducts", {})
+        
+        # Generate timestamp
+        timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+        
+        # Prepare log entry
+        log_entry = f"[{timestamp}] Low Stock Update: "
+        
+        if mutation_result.get("success"):
+            updated_products = mutation_result.get("updatedProducts", [])
+            updated_count = mutation_result.get("updatedCount", 0)
+            
+            log_entry += f"Successfully updated {updated_count} products\n"
+            
+            # Log each updated product
+            for product in updated_products:
+                product_name = product.get("name", "Unknown")
+                new_stock = product.get("stock", 0)
+                log_entry += f"  - {product_name}: Stock updated to {new_stock}\n"
+        else:
+            error_message = mutation_result.get("message", "Unknown error")
+            log_entry += f"Failed - {error_message}\n"
+        
+        # Write to log file
+        with open("/tmp/low_stock_updates_log.txt", "a") as log_file:
+            log_file.write(log_entry)
+            
+    except Exception as e:
+        # Log error if mutation fails
+        timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+        error_entry = f"[{timestamp}] Low Stock Update Error: {str(e)}\n"
+        
+        try:
+            with open("/tmp/low_stock_updates_log.txt", "a") as log_file:
+                log_file.write(error_entry)
+        except:
+            print(f"Error logging low stock update failure: {e}")
