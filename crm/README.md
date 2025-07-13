@@ -21,12 +21,20 @@ sudo apt update
 sudo apt install redis-server
 sudo systemctl start redis-server
 sudo systemctl enable redis-server
+
+# Verify Redis is running
+redis-cli ping
+# Should return: PONG
 ```
 
 #### On macOS (using Homebrew):
 ```bash
 brew install redis
 brew services start redis
+
+# Verify Redis is running
+redis-cli ping
+# Should return: PONG
 ```
 
 #### On Windows:
@@ -49,13 +57,23 @@ python manage.py migrate
 
 This will create the SQLite database file (`db.sqlite3`) and the necessary tables including those for Celery Beat scheduling.
 
-### 4. Create Superuser (Optional)
+### 4. Verify Celery Configuration
+
+Test that Celery can find your tasks:
+
+```bash
+celery -A crm inspect registered
+```
+
+This should list your `crm.tasks.generate_crm_report` task.
+
+### 5. Create Superuser (Optional)
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 5. Start the Application
+### 6. Start the Application
 
 #### Terminal 1: Start Django Development Server
 ```bash
@@ -64,19 +82,33 @@ python manage.py runserver
 
 #### Terminal 2: Start Celery Worker
 ```bash
-celery -A crm worker -l info
+celery -A crm worker --loglevel=info
 ```
 
 #### Terminal 3: Start Celery Beat (Task Scheduler)
 ```bash
-celery -A crm beat -l info
+celery -A crm beat --loglevel=info
 ```
 
-### 6. Verify Setup
+### 7. Verify Setup
 
-1. **Test GraphQL API**: Visit `http://localhost:8000/graphql/` to access the GraphQL interface
-2. **Check Celery Tasks**: The worker terminal should show task execution logs
-3. **Verify Report Generation**: Check `/tmp/crm_report_log.txt` for generated reports
+1. **Test Redis Connection**: 
+   ```bash
+   redis-cli ping
+   # Should return: PONG
+   ```
+
+2. **Test Celery Task Discovery**:
+   ```bash
+   celery -A crm inspect registered
+   # Should list: crm.tasks.generate_crm_report
+   ```
+
+3. **Test GraphQL API**: Visit `http://localhost:8000/graphql/` to access the GraphQL interface
+
+4. **Check Celery Tasks**: The worker terminal should show task execution logs
+
+5. **Verify Report Generation**: Check `/tmp/crm_report_log.txt` for generated reports
 
 ## Testing the Report Generation
 
