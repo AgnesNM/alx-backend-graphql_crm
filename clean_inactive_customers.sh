@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clean up inactive customers - customers with no orders in the last year
-# This script should be placed in crm/cron_jobs/clean_inactive_customers.sh
+# This script should be placed in crm/cron_jobs/cleaninactivecustomers.sh
 
 # Get the current timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -34,7 +34,7 @@ print(f'{deleted_count}')
 " 2>/dev/null)
 
 # Log the result with timestamp
-echo "[$TIMESTAMP] Deleted $RESULT inactive customers" >> /tmp/customer_cleanup_log.txt
+echo "[$TIMESTAMP] Deleted $RESULT inactive customers" >> /tmp/customercleanuplog.txt
 
 # Exit with appropriate code
 if [ $? -eq 0 ]; then
