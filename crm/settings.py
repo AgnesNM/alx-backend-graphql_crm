@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'django_crontab',
+    'django_celery_beat',  # Add this line for Celery Beat
     'crm',
 ]
 
@@ -145,6 +146,43 @@ GRAPHQL_JWT = {
 }
 
 
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+
+# Celery Beat Configuration
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'generate-crm-report': {
+        'task': 'crm.tasks.generate_crm_report',
+        'schedule': crontab(day_of_week='mon', hour=6, minute=0),  # Every Monday at 6:00 AM
+    },
+}
+
+# Optional: For testing purposes, you can also add a more frequent schedule
+# Uncomment the following to run every minute for testing:
+# CELERY_BEAT_SCHEDULE = {
+#     'generate-crm-report-test': {
+#         'task': 'crm.tasks.generate_crm_report',
+#         'schedule': crontab(minute='*'),  # Every minute
+#     },
+# }
+
+# Beat scheduler
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Additional Celery settings for reliability
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
+
 # Django-crontab Configuration
 CRONJOBS = [
     ('*/5 * * * *', 'crm.cron.log_crm_heartbeat'),
@@ -197,6 +235,11 @@ LOGGING = {
         'crm': {
             'handlers': ['file', 'console'],
             'level': 'DEBUG',
+            'propagate': True,
+        },
+        'celery': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
@@ -257,4 +300,5 @@ CRM_SETTINGS = {
     'HEARTBEAT_LOG_PATH': '/tmp/crm_heartbeat_log.txt',
     'ORDER_REMINDER_LOG_PATH': '/tmp/order_reminders_log.txt',
     'GRAPHQL_ENDPOINT': 'http://localhost:8000/graphql',
+    'CRM_REPORT_LOG_PATH': '/tmp/crm_report_log.txt',  # Add this for Celery reports
 }
