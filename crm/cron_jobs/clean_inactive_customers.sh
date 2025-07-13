@@ -6,8 +6,9 @@
 # Get the current timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Change to the project directory (adjust path as needed)
-cd "$(dirname "$0")/.." || exit 1
+# Get the script directory and change to project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../.." || exit 1
 
 # Execute Django management command to delete inactive customers
 RESULT=$(python manage.py shell -c "
